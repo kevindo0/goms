@@ -1,0 +1,20 @@
+[app]
+SavePath = /tmp/data
+LoggingFile = aiops.log
+
+[mysql]
+Username = root
+Password = 123456
+Ip = 127.0.0.1
+Port = 3306
+Db = test
+ConnMaxLifetime = 100
+MaxOpenConns = 10
+MaxIdleConns = 10
+
+[redis]
+Host = 127.0.0.1:6379
+Password = 
+MaxIdle = 50
+MaxActive = 50
+IdleTimeout = 200
