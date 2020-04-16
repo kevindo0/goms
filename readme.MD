@@ -2,7 +2,14 @@
 ### 2.1 go mod
 ```bash
 go mod init goms
+# 设置GOPROXY代理
+go env -w GOPROXY=https://goproxy.cn,direct
+# 设置GOPRIVATE来跳过私有库，比如常用的Gitlab或Gitee，中间使用逗号分隔
+go env -w GOPRIVATE=*.gitlab.com,*.gitee.com
+# replace 链接到本地
+go mod edit -replace=gitlab.51y5.net/zaojiu/common@v0.0.0-20200413081649-969ce8d7dee8=/Users/duchao/zenmen/common
 ```
+
 ### 2.2 [gin hot reload](https://github.com/gravityblast/fresh)
 ```bash
 # 1. install
@@ -22,6 +29,7 @@ http://localhost:8080
 2. [log recard logrus](https://github.com/sirupsen/logrus)
 3. [log zap](https://github.com/uber-go/zap)
 4. [golang runtime model](https://www.jianshu.com/p/84bac7932394)
+5. [Next() 和 Abort() 的含义](https://blog.csdn.net/cyberspecter/article/details/100602552)
 
 ## 3. 依赖
 ```bash
