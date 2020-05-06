@@ -1,18 +1,24 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "pkgte/middleware"
-    "github.com/gin-gonic/gin"
+	"fmt"
+	"sync"
+	"time"
 )
 
-func main(){
-    r := gin.Default()
-    r.Use(middleware.First(), middleware.Second())
-    r.GET("/hello", func(c *gin.Context) {
-        fmt.Println("**hello**")
-        c.String(http.StatusOK, "hello")
-    })
-    r.Run()
+func process(i int, wg *sync.WaitGroup) {
+	fmt.Println("i:", i)
+	time.Sleep(2 * time.Second)
+	fmt.Printf("Goroutine %d ended\n", i)
+	wg.Done()
+}
+
+func main() {
+	var wg sync.WaitGroup
+	for i := 0; i < 3; i++ {
+		wg.Add(1)
+		go process(i, &wg)
+	}
+	wg.Wait()
+	fmt.Println("All go routines finished executing")
 }
