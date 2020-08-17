@@ -15,10 +15,11 @@ func QueryOne(db *gorm.DB) {
 
 func QueryPreload(db *gorm.DB) {
 	var u = User{}
-	// db.Debug().First(&u)
+	db.Debug().First(&u)
+	Show(u)
 	// db.Debug().Model(&u).Related(&u.Companies)
-	// db.Model(&u).Association("Companies").Find(&u.Companies)
-	db.Debug().Preload("Companies").Find(&u, 1)
+	db.Debug().Model(&u).Association("Companies").Find(&u.Companies)
+	// db.Debug().Preload("Companies").Find(&u, 1)
 	Show(u)
 }
 
