@@ -1,3 +1,4 @@
 tmp
 *.pem
 zenmen/**/config.*
+zenmen/lt

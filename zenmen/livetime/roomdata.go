@@ -8,7 +8,7 @@ import (
 )
 
 func LiveTimeEveryDay(db *gorm.DB, tlrIDs []int) {
-	start := time.Date(2020, 7, 18, 0, 0, 0, 0, time.UTC)
+	start := time.Date(2020, 8, 14, 0, 0, 0, 0, time.UTC)
 	now := time.Now().Unix()
 	totalIntervalTime := 0
 	// 总的观看人数

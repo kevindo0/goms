@@ -32,10 +32,22 @@ func TestLiveRoomID(db *gorm.DB) []int {
 }
 
 // 累计上架直播数
-func LiveRoomCount(db *gorm.DB, tlrIDs []int) int {
+func LiveRoomCountToC(db *gorm.DB, tlrIDs []int) int {
 	count := 0
 	err := db.Table("ziyuan_live_rooms").
-		Where("created_at>=? and id not in (?)", StartTime, tlrIDs).
+		Where("`to`=0 and created_at>=? and id not in (?)", StartTime, tlrIDs).
+		Count(&count).Error
+	if err != nil {
+		panic(fmt.Errorf("live room count %s", err))
+	}
+	return count
+}
+
+// 累计上架直播数
+func LiveRoomCountToB(db *gorm.DB, tlrIDs []int) int {
+	count := 0
+	err := db.Table("ziyuan_live_rooms").
+		Where("`to`=1 and created_at>=? and id not in (?)", StartTime, tlrIDs).
 		Count(&count).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count %s", err))
