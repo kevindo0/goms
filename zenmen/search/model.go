@@ -8,4 +8,5 @@ type Search struct {
 	Description   string `gorm:"column:description;type:text" json:"description"`
 	Tags          string `gorm:"column:tags;type:text" json:"tags"`
 	SpecialColumn string `gorm:"column:special_column;size:50" json:"special_column"`
+	UUID          string `gorm:"column:uuid;size:50" json:"uuid"`
 }

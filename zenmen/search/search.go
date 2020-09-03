@@ -19,6 +19,7 @@ type LiveRoom struct {
 	Brief       string `json:"brief"`
 	Description string `json:"description"`
 	Tags        string `json:"tags"`
+	UUID        string `json:"uuid"`
 }
 
 type Course struct {
@@ -28,6 +29,7 @@ type Course struct {
 	Description   string `json:"description"`
 	Tags          string `json:"tags"`
 	SpecialColumn string `json:"special_column"`
+	UUID          string `json:"uuid"`
 }
 
 func SearchInit() {
@@ -36,7 +38,7 @@ func SearchInit() {
 	if err != nil {
 		panic(err)
 	}
-	// db.LogMode(true)
+	db.LogMode(true)
 	defer db.Close()
 	fmt.Println("server is started...")
 	LiveSearchInit(db)
@@ -46,7 +48,8 @@ func SearchInit() {
 func LiveSearchInit(db *gorm.DB) {
 	rooms := []LiveRoom{}
 	err := db.Table("ziyuan_live_rooms").
-		Select("id,title,brief,description,tags").
+		Select("id,title,brief,description,tags,uuid").
+		Where("public is true and status='online' and `to`=0").
 		Scan(&rooms).Error
 	if err != nil {
 		panic(err)
@@ -58,7 +61,7 @@ func LiveSearchInit(db *gorm.DB) {
 		}
 		var lecturerIDs []int
 		err = db.Table("ziyuan_lecturers").
-			Where("live_room_id=?", room.ID).
+			Where("live_room_id=? and user_id is not null", room.ID).
 			Pluck("user_id", &lecturerIDs).Error
 		if err != nil {
 			fmt.Println("error:", room.ID, err)
@@ -89,6 +92,7 @@ func LiveSearchInit(db *gorm.DB) {
 			Brief:       room.Brief,
 			Description: room.Description,
 			Tags:        tags,
+			UUID:        room.UUID,
 		}
 		var ids []int
 		db.Table("ziyuan_searches").
@@ -115,7 +119,8 @@ func LiveSearchInit(db *gorm.DB) {
 func CourseInit(db *gorm.DB) {
 	courses := []Course{}
 	err := db.Table("ziyuan_courses").
-		Select("id,title,brief,description,tags,special_column").
+		Select("id,title,brief,description,tags,special_column,uuid").
+		Where("status='online'").
 		Scan(&courses).Error
 	if err != nil {
 		panic(err)
@@ -127,6 +132,7 @@ func CourseInit(db *gorm.DB) {
 			Description:   course.Description,
 			Tags:          course.Tags,
 			SpecialColumn: course.SpecialColumn,
+			UUID:          course.UUID,
 		}
 		var ids []int
 		db.Table("ziyuan_searches").
