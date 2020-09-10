@@ -14,12 +14,13 @@ const (
 )
 
 type LiveRoom struct {
-	ID          uint   `json:"id"`
-	Title       string `json:"title"`
-	Brief       string `json:"brief"`
-	Description string `json:"description"`
-	Tags        string `json:"tags"`
-	UUID        string `json:"uuid"`
+	ID           uint   `json:"id"`
+	Title        string `json:"title"`
+	Brief        string `json:"brief"`
+	Description  string `json:"description"`
+	Tags         string `json:"tags"`
+	Progress     int    `json:"progress"`
+	ShowPlayback *bool  `json:"show_playback"`
 }
 
 type Course struct {
@@ -29,7 +30,6 @@ type Course struct {
 	Description   string `json:"description"`
 	Tags          string `json:"tags"`
 	SpecialColumn string `json:"special_column"`
-	UUID          string `json:"uuid"`
 }
 
 func SearchInit() {
@@ -48,13 +48,16 @@ func SearchInit() {
 func LiveSearchInit(db *gorm.DB) {
 	rooms := []LiveRoom{}
 	err := db.Table("ziyuan_live_rooms").
-		Select("id,title,brief,description,tags,uuid").
-		Where("public is true and status='online' and `to`=0").
+		Select("id,title,brief,description,tags,progress,show_playback").
+		Where("public is true and status='online' and `to`=0 and title not like '%测试%'").
 		Scan(&rooms).Error
 	if err != nil {
 		panic(err)
 	}
 	for _, room := range rooms {
+		if room.Progress > 1 && (room.ShowPlayback == nil || !(*room.ShowPlayback)) {
+			continue
+		}
 		names := []string{}
 		if room.Tags != "" {
 			names = append(names, room.Tags)
@@ -87,28 +90,34 @@ func LiveSearchInit(db *gorm.DB) {
 		if len(names) > 0 {
 			tags = strings.Join(names, ",")
 		}
-		search := Search{
-			Title:       room.Title,
-			Brief:       room.Brief,
-			Description: room.Description,
-			Tags:        tags,
-			UUID:        room.UUID,
-		}
+
 		var ids []int
 		db.Table("ziyuan_searches").
 			Where("item='live' and item_id=?", room.ID).
 			Pluck("id", &ids)
 		if len(ids) == 0 {
-			search.Item = "live"
-			search.ItemID = room.ID
+			search := Search{
+				Item:        LiveItem,
+				ItemID:      room.ID,
+				Title:       room.Title,
+				Brief:       room.Brief,
+				Description: room.Description,
+				Tags:        tags,
+			}
 			err := db.Table("ziyuan_searches").Create(&search).Error
 			if err != nil {
 				fmt.Println("error search create:", err)
 			}
 		} else {
+			search := map[string]string{
+				"title":       room.Title,
+				"brief":       room.Brief,
+				"description": room.Description,
+				"tags":        tags,
+			}
 			err := db.Table("ziyuan_searches").
 				Where("item='live' and item_id=?", room.ID).
-				Update(&search).Error
+				Updates(search).Error
 			if err != nil {
 				fmt.Println("error search update:", err)
 			}
@@ -119,36 +128,42 @@ func LiveSearchInit(db *gorm.DB) {
 func CourseInit(db *gorm.DB) {
 	courses := []Course{}
 	err := db.Table("ziyuan_courses").
-		Select("id,title,brief,description,tags,special_column,uuid").
-		Where("status='online'").
+		Select("id,title,brief,description,tags,special_column").
+		Where("status='online' and title not like '%测试%'").
 		Scan(&courses).Error
 	if err != nil {
 		panic(err)
 	}
 	for _, course := range courses {
-		search := Search{
-			Title:         course.Title,
-			Brief:         course.Brief,
-			Description:   course.Description,
-			Tags:          course.Tags,
-			SpecialColumn: course.SpecialColumn,
-			UUID:          course.UUID,
-		}
 		var ids []int
 		db.Table("ziyuan_searches").
 			Where("item=? and item_id=?", CourseItem, course.ID).
 			Pluck("id", &ids)
 		if len(ids) == 0 {
-			search.Item = CourseItem
-			search.ItemID = course.ID
+			search := Search{
+				Item:          CourseItem,
+				ItemID:        course.ID,
+				Title:         course.Title,
+				Brief:         course.Brief,
+				Description:   course.Description,
+				Tags:          course.Tags,
+				SpecialColumn: course.SpecialColumn,
+			}
 			err := db.Table("ziyuan_searches").Create(&search).Error
 			if err != nil {
 				fmt.Println("error search create:", err)
 			}
 		} else {
+			search := map[string]string{
+				"title":          course.Title,
+				"brief":          course.Brief,
+				"description":    course.Description,
+				"tags":           course.Tags,
+				"special_column": course.SpecialColumn,
+			}
 			err := db.Table("ziyuan_searches").
 				Where("item=? and item_id=?", CourseItem, course.ID).
-				Update(&search).Error
+				Updates(search).Error
 			if err != nil {
 				fmt.Println("error search update:", err)
 			}

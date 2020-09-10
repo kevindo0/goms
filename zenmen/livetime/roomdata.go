@@ -8,42 +8,64 @@ import (
 )
 
 func LiveTimeEveryDay(db *gorm.DB, tlrIDs []int) {
-	start := time.Date(2020, 8, 14, 0, 0, 0, 0, time.UTC)
-	now := time.Now().Unix()
+	start, _ := time.Parse("2006-01-02", EveryDayStartTime)
+	end, _ := time.Parse("2006-01-02", EveryDayENdTime)
 	totalIntervalTime := 0
 	// 总的观看人数
 	number := 0
 	// 总的观看时长
 	totalSum := 0
+	row := dataFileSave.EveryDaySheet.AddRow()
+	for _, title := range []string{"日期", "观看时长", "观看人数", "每用户平均观看时长"} {
+		nameCell := row.AddCell()
+		nameCell.Value = title
+	}
 	for i := 0; i < 1000; i++ {
 		s := start.AddDate(0, 0, i)
 		e := start.AddDate(0, 0, i+1)
-		if s.Unix() > now {
+		if s.Unix() > end.Unix() {
 			break
 		}
 		var interval struct {
 			Sum int
 		}
-		db.Table("ziyuan_live_times").
-			Where("created_at>? and created_at<? and live_room_id not in (?)", s, e, tlrIDs).
-			Select("sum(`interval`) as sum").
+		var newdb *gorm.DB
+		if len(tlrIDs) > 0 {
+			newdb = db.Table("ziyuan_live_times").
+				Where("created_at>? and created_at<? and live_room_id not in (?)", s, e, tlrIDs)
+		} else {
+			newdb = db.Table("ziyuan_live_times").
+				Where("created_at>? and created_at<?", s, e)
+		}
+		newdb.Select("sum(`interval`) as sum").
 			Find(&interval)
 
 		if interval.Sum > 0 {
 			totalIntervalTime += interval.Sum
-			showDay := fmt.Sprintf("日期: %d-%02d-%02d", s.Year(), s.Month(), s.Day())
+			showDay := fmt.Sprintf("%d-%02d-%02d", s.Year(), s.Month(), s.Day())
+			row := dataFileSave.EveryDaySheet.AddRow()
+			row.AddCell().Value = showDay
 			// 计算当日观看直播的总人数
 			count := LiveRoomsWatchBetween(db, tlrIDs, s, e)
 			average := interval.Sum / count
 			number += count
 			totalSum += interval.Sum
-			show := fmt.Sprintf("%s \t观看时长：%d(s) %s \t观看人数:%d \t每用户平均观看时长: %s", showDay, interval.Sum, Seconds2Time(interval.Sum), count, Seconds2TimeMinite(average))
-			fmt.Println(show)
+			// show := fmt.Sprintf("%s \t观看时长：%d(s) %s \t观看人数:%d \t每用户平均观看时长: %s", showDay, interval.Sum, Seconds2Time(interval.Sum), count, Seconds2TimeMinite(average))
+			// row.AddCell().Value = fmt.Sprintf("%d(s) %s", interval.Sum, Seconds2Time(interval.Sum))
+			row.AddCell().SetInt(interval.Sum)
+			row.AddCell().SetInt(count)
+			row.AddCell().Value = Seconds2TimeMinite(average)
 		}
 	}
 	show := ""
+	row = dataFileSave.EveryDaySheet.AddRow()
 	if number > 0 {
+		row = dataFileSave.EveryDaySheet.AddRow()
 		res := totalSum / number
+		row.AddCell().Value = ""
+		row.AddCell().Value = fmt.Sprintf("总时长:%d", totalSum)
+		row.AddCell().Value = fmt.Sprintf("人数:%d", number)
+		row.AddCell().Value = fmt.Sprintf("平均后：%d(s), %s", res, Seconds2Time(res))
 		show = fmt.Sprintf("根据每日数据汇总后，总的每用户平均观看时长：总时长%d(s), 人数:%d, 平均后：%d(s), %s", totalSum, number, res, Seconds2Time(res))
 	} else {
 		show = "没有人观看"
