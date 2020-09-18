@@ -1,11 +1,9 @@
 package main
 
 import (
-	// "zenmen/livetime"
-	"zenmen/search"
+	"zenmen/livetime"
 )
 
 func main() {
-	// livetime.LiveTime()
-	search.SearchInit()
+	livetime.LiveTime()
 }

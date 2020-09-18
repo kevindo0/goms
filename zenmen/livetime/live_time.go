@@ -14,11 +14,12 @@ const (
 )
 
 type DataSave struct {
-	File           *xlsx.File
-	BasicSheet     *xlsx.Sheet
-	EveryDaySheet  *xlsx.Sheet
-	RetentionSheet *xlsx.Sheet
-	LiveRoom       *xlsx.Sheet
+	File            *xlsx.File
+	BasicSheet      *xlsx.Sheet
+	EveryDaySheet   *xlsx.Sheet
+	RetentionSheet  *xlsx.Sheet
+	LiveRoom        *xlsx.Sheet
+	UserActiveSheet *xlsx.Sheet
 }
 
 func (d *DataSave) Save() {
@@ -34,6 +35,7 @@ func init() {
 	dataFileSave.EveryDaySheet, _ = dataFileSave.File.AddSheet("每日数据")
 	dataFileSave.RetentionSheet, _ = dataFileSave.File.AddSheet("留存率")
 	dataFileSave.LiveRoom, _ = dataFileSave.File.AddSheet("项目详情")
+	dataFileSave.UserActiveSheet, _ = dataFileSave.File.AddSheet("用户活跃数")
 }
 
 func LiveTime() {
@@ -95,5 +97,6 @@ func LiveTime() {
 	LiveTimeEveryDay(db, testLiveRoomIDs)
 	UserRetention(db)
 	LiveRoomList(db, testLiveRoomIDs)
+	UserAciveEveryDay(db)
 	dataFileSave.Save()
 }

@@ -3,3 +3,6 @@ tmp
 zenmen/**/config.*
 zenmen/lt
 /**/output
+/**/*.xlsx
+
+.DS_Store
