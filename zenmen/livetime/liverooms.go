@@ -22,13 +22,10 @@ func LiveRoomList(db *gorm.DB, tlrIDs []int) {
 		nameCell := row.AddCell()
 		nameCell.Value = title
 	}
-	var newdb *gorm.DB
+	newdb := db.Table("ziyuan_live_rooms").
+		Where("created_at between ? and ?", StartTime, EndTime)
 	if len(tlrIDs) > 0 {
-		newdb = db.Table("ziyuan_live_rooms").
-			Where("created_at between ? and ? and id not in (?)", StartTime, EndTime, tlrIDs)
-	} else {
-		newdb = db.Table("ziyuan_live_rooms").
-			Where("created_at between ? and ?", StartTime, EndTime)
+		newdb = newdb.Where("id not in (?)", tlrIDs)
 	}
 	var rooms []LiveRoomOrm
 	err := newdb.Where("deleted_at is null").
@@ -63,10 +60,11 @@ func GetLiveRoomPV(db *gorm.DB, liveRoomID int) int {
 func GetLiveRoomCount(db *gorm.DB, liveRoomID int) int {
 	countLogin := 0
 	countNot := 0
+	countVisitorID := 0
 
 	// 按user_id进行区分
 	err := db.Table("ziyuan_live_times").
-		Where("user_id>0 and live_room_id=?", liveRoomID).
+		Where("visitor_id is null and user_id>0 and live_room_id=?", liveRoomID).
 		Select("count(distinct(user_id))").
 		Count(&countLogin).Error
 	if err != nil {
@@ -74,12 +72,20 @@ func GetLiveRoomCount(db *gorm.DB, liveRoomID int) int {
 	}
 	// 按vid进行区分
 	err = db.Table("ziyuan_live_times").
-		Where("user_id=0 and live_room_id=?", liveRoomID).
+		Where("visitor_id is null and user_id=0 and live_room_id=?", liveRoomID).
 		Select("count(distinct(vid))").
 		Count(&countNot).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count login %s", err))
 	}
-	count := countLogin + countNot
+	// 按visitor_id进行区分
+	err = db.Table("ziyuan_live_times").
+		Where("visitor_id is not null and live_room_id=?", liveRoomID).
+		Select("count(distinct(visitor_id))").
+		Count(&countVisitorID).Error
+	if err != nil {
+		panic(fmt.Errorf("live room count login %s", err))
+	}
+	count := countLogin + countNot + countVisitorID
 	return count
 }

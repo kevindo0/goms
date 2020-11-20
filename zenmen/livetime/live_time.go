@@ -92,8 +92,8 @@ func LiveTime() {
 	row = dataFileSave.BasicSheet.AddRow()
 	row.AddCell().Value = "平均每用户观看项目数:"
 	row.AddCell().Value = averageLiveRoomWatch
-	// LiveTimeRoomData(db, testLiveRoomIDs)
-	// LiveTimeUserData(db, testLiveRoomIDs)
+	// // LiveTimeRoomData(db, testLiveRoomIDs)
+	// // LiveTimeUserData(db, testLiveRoomIDs)
 	LiveTimeEveryDay(db, testLiveRoomIDs)
 	UserRetention(db)
 	LiveRoomList(db, testLiveRoomIDs)

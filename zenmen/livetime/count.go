@@ -80,35 +80,44 @@ func LiveRoomCountToB(db *gorm.DB, tlrIDs []int) int {
 func Count(db *gorm.DB, tlrIDs []int) int {
 	countLogin := 0
 	countNot := 0
+	countVisitorID := 0
 
-	// 按user_id进行区分
-	var newdb *gorm.DB
+	// user_id
+	newdb := db.Table("ziyuan_live_times").
+		Where("visitor_id is null and user_id>0")
 	if len(tlrIDs) > 0 {
-		newdb = db.Table("ziyuan_live_times").
-			Where("user_id>0 and live_room_id not in (?)", tlrIDs)
-	} else {
-		newdb = db.Table("ziyuan_live_times").
-			Where("user_id>0")
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
 	err := newdb.Select("count(distinct(user_id))").
 		Count(&countLogin).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count login %s", err))
 	}
-	// 按vid进行区分
+
+	// vid
+	newdb = db.Table("ziyuan_live_times").
+		Where("visitor_id is null and user_id=0")
 	if len(tlrIDs) > 0 {
-		newdb = db.Table("ziyuan_live_times").
-			Where("user_id=0 and live_room_id not in (?)", tlrIDs)
-	} else {
-		newdb = db.Table("ziyuan_live_times").
-			Where("user_id=0")
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
 	err = newdb.Select("count(distinct(vid))").
 		Count(&countNot).Error
 	if err != nil {
-		panic(fmt.Errorf("live room count login %s", err))
+		panic(fmt.Errorf("live room count not login %s", err))
 	}
-	count := countLogin + countNot
+	// visitor_id
+	newdb = db.Table("ziyuan_live_times").
+		Where("visitor_id is not null")
+	if len(tlrIDs) > 0 {
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
+	}
+	err = newdb.Select("count(distinct(visitor_id))").
+		Count(&countVisitorID).Error
+	if err != nil {
+		panic(fmt.Errorf("live room count visitor_id %s", err))
+	}
+
+	count := countLogin + countNot + countVisitorID
 	row := dataFileSave.BasicSheet.AddRow()
 	row.AddCell().Value = "累计观看人数:"
 	row.AddCell().SetInt(count)
@@ -121,14 +130,11 @@ func LiveTimesTotalTime(db *gorm.DB, tlrIDs []int) int {
 		Total int
 	}
 	results := Result{}
-	var newdb *gorm.DB
+
+	newdb := db.Table("ziyuan_live_times").
+		Select("sum(`interval`) as total")
 	if len(tlrIDs) > 0 {
-		newdb = db.Table("ziyuan_live_times").
-			Select("sum(`interval`) as total").
-			Where("live_room_id not in (?)", tlrIDs)
-	} else {
-		newdb = db.Table("ziyuan_live_times").
-			Select("sum(`interval`) as total")
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
 	err := newdb.Scan(&results).Error
 	if err != nil {
@@ -144,13 +150,10 @@ func LiveTimesTotalTime(db *gorm.DB, tlrIDs []int) int {
 // 去除观看时长小于10s的
 func LiveTimesTotalNumber(db *gorm.DB, tlrIDs []int) int {
 	count := 0
-	var newdb *gorm.DB
+	newdb := db.Table("ziyuan_live_times").
+		Where("`interval` > 10")
 	if len(tlrIDs) > 0 {
-		newdb = db.Table("ziyuan_live_times").
-			Where("`interval` > 10 and live_room_id not in (?)", tlrIDs)
-	} else {
-		newdb = db.Table("ziyuan_live_times").
-			Where("`interval` > 10")
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
 	err := newdb.Count(&count).
 		Error
@@ -167,45 +170,50 @@ func LiveTimesTotalNumber(db *gorm.DB, tlrIDs []int) int {
 func LiveRoomsWatch(db *gorm.DB, tlrIDs []int) int {
 	countLogin := 0
 	countNot := 0
+	countVisitorID := 0
 
-	var subQuery *gorm.SqlExpr
+	// user_id
+	newdb := db.Table("ziyuan_live_times").
+		Select("live_room_id, user_id").
+		Where("visitor_id is null and user_id>0")
 	if len(tlrIDs) > 0 {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, user_id").
-			Where("user_id>0 and live_room_id not in (?)", tlrIDs).
-			Group("live_room_id,user_id").
-			SubQuery()
-	} else {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, user_id").
-			Where("user_id>0").
-			Group("live_room_id,user_id").
-			SubQuery()
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
+	subQuery := newdb.Group("live_room_id,user_id").SubQuery()
+
 	err := db.Raw("SELECT count(*) FROM ? as t", subQuery).
 		Count(&countLogin).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count login %s", err))
 	}
+
+	// vid
+	newdb = db.Table("ziyuan_live_times").
+		Select("live_room_id, vid").
+		Where("visitor_id is null and user_id=0")
 	if len(tlrIDs) > 0 {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, vid").
-			Where("user_id=0 and live_room_id not in (?)", tlrIDs).
-			Group("live_room_id,vid").
-			SubQuery()
-	} else {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, vid").
-			Where("user_id=0").
-			Group("live_room_id,vid").
-			SubQuery()
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
+	subQuery = newdb.Group("live_room_id,vid").SubQuery()
 	err = db.Raw("SELECT count(*) FROM ? as t", subQuery).
 		Count(&countNot).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count not login %s", err))
 	}
-	count := countLogin + countNot
+	// visitor_id
+	newdb = db.Table("ziyuan_live_times").
+		Select("live_room_id, visitor_id").
+		Where("visitor_id is not null")
+	if len(tlrIDs) > 0 {
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
+	}
+	subQuery = newdb.Group("live_room_id,visitor_id").SubQuery()
+	err = db.Raw("SELECT count(*) FROM ? as t", subQuery).
+		Count(&countVisitorID).Error
+	if err != nil {
+		panic(fmt.Errorf("live room count visitor_id %s", err))
+	}
+	count := countLogin + countNot + countVisitorID
 	row := dataFileSave.BasicSheet.AddRow()
 	row.AddCell().Value = "所有用户累计观看项目总和数:"
 	row.AddCell().SetInt(count)
@@ -216,59 +224,53 @@ func LiveRoomsWatch(db *gorm.DB, tlrIDs []int) int {
 func LiveRoomsWatchBetween(db *gorm.DB, tlrIDs []int, start time.Time, end time.Time) int {
 	countLogin := 0
 	countNot := 0
-	var subQuery *gorm.SqlExpr
+	countVisitorID := 0
+	// user_id
+	newdb := db.Table("ziyuan_live_times").
+		Select("live_room_id, user_id").
+		Where("visitor_id is null and user_id>0").
+		Where("created_at between ? and ?", start, end)
 	if len(tlrIDs) > 0 {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, user_id").
-			Where("created_at between ? and ?", start, end).
-			Where("user_id>0 and live_room_id not in (?)", tlrIDs).
-			Group("live_room_id,user_id").
-			SubQuery()
-	} else {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, user_id").
-			Where("created_at between ? and ?", start, end).
-			Where("user_id>0").
-			Group("live_room_id,user_id").
-			SubQuery()
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
-	// subQuery := db.Table("ziyuan_live_times").
-	// 	Select("live_room_id, user_id").
-	// 	Where("created_at between ? and ?", start, end).
-	// 	Where("user_id>0 and live_room_id not in (?)", tlrIDs).
-	// 	Group("live_room_id,user_id").
-	// 	SubQuery()
+	subQuery := newdb.Group("live_room_id,user_id").SubQuery()
+
 	err := db.Raw("SELECT count(*) FROM ? as t", subQuery).
 		Count(&countLogin).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count login %s", err))
 	}
+
+	// vid
+	newdb = db.Table("ziyuan_live_times").
+		Select("live_room_id, vid").
+		Where("visitor_id is null and user_id=0").
+		Where("created_at between ? and ?", start, end)
+
 	if len(tlrIDs) > 0 {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, vid").
-			Where("created_at between ? and ?", start, end).
-			Where("user_id=0 and live_room_id not in (?)", tlrIDs).
-			Group("live_room_id,vid").
-			SubQuery()
-	} else {
-		subQuery = db.Table("ziyuan_live_times").
-			Select("live_room_id, vid").
-			Where("created_at between ? and ?", start, end).
-			Where("user_id=0").
-			Group("live_room_id,vid").
-			SubQuery()
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 	}
-	// subQuery = db.Table("ziyuan_live_times").
-	// 	Select("live_room_id, vid").
-	// 	Where("created_at between ? and ?", start, end).
-	// 	Where("user_id=0 and live_room_id not in (?)", tlrIDs).
-	// 	Group("live_room_id,vid").
-	// 	SubQuery()
+	subQuery = newdb.Group("live_room_id,vid").SubQuery()
 	err = db.Raw("SELECT count(*) FROM ? as t", subQuery).
 		Count(&countNot).Error
 	if err != nil {
 		panic(fmt.Errorf("live room count not login %s", err))
 	}
-	count := countLogin + countNot
+	// visitor_id
+	newdb = db.Table("ziyuan_live_times").
+		Select("live_room_id, visitor_id").
+		Where("visitor_id is not null").
+		Where("created_at between ? and ?", start, end)
+
+	if len(tlrIDs) > 0 {
+		newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
+	}
+	subQuery = newdb.Group("live_room_id,visitor_id").SubQuery()
+	err = db.Raw("SELECT count(*) FROM ? as t", subQuery).
+		Count(&countVisitorID).Error
+	if err != nil {
+		panic(fmt.Errorf("live room count visitor_id %s", err))
+	}
+	count := countLogin + countNot + countVisitorID
 	return count
 }

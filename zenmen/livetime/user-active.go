@@ -7,7 +7,7 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-// 新注册人数
+// 活跃用户人数
 func UserAciveEveryDay(db *gorm.DB) {
 	start, _ := time.Parse("2006-01-02", UserActiveStartTime)
 	end, _ := time.Parse("2006-01-02", UserActiveEndTime)
@@ -24,13 +24,23 @@ func UserAciveEveryDay(db *gorm.DB) {
 		}
 		date := s.Format("2006-01-02")
 		count := 0
-		err := db.Table("ziyuan_user_actives").Where("date=?", date).
+		countVisitorID := 0
+		err := db.Table("ziyuan_user_actives").
+			Where("visitor_id='' and date=?", date).
 			Count(&count).Error
+		if err != nil {
+			fmt.Println("Error:", err)
+		}
+		err = db.Table("ziyuan_user_actives").
+			Select("visitor_id").
+			Where("visitor_id!='' and date=?", date).
+			Group("visitor_id").
+			Count(&countVisitorID).Error
 		if err != nil {
 			fmt.Println("Error:", err)
 		}
 		row := dataFileSave.UserActiveSheet.AddRow()
 		row.AddCell().Value = date
-		row.AddCell().SetInt(count)
+		row.AddCell().SetInt(count + countVisitorID)
 	}
 }

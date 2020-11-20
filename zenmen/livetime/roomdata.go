@@ -29,13 +29,10 @@ func LiveTimeEveryDay(db *gorm.DB, tlrIDs []int) {
 		var interval struct {
 			Sum int
 		}
-		var newdb *gorm.DB
+		newdb := db.Table("ziyuan_live_times").
+			Where("created_at>? and created_at<? and `interval`<?", s, e, 12*60*60)
 		if len(tlrIDs) > 0 {
-			newdb = db.Table("ziyuan_live_times").
-				Where("created_at>? and created_at<? and live_room_id not in (?)", s, e, tlrIDs)
-		} else {
-			newdb = db.Table("ziyuan_live_times").
-				Where("created_at>? and created_at<?", s, e)
+			newdb = newdb.Where("live_room_id not in (?)", tlrIDs)
 		}
 		newdb.Select("sum(`interval`) as sum").
 			Find(&interval)
