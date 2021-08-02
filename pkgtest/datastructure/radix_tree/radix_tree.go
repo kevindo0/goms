@@ -9,6 +9,7 @@ import (
 // 基数树，也称压缩前缀树（例：https://github.com/ZBIGBEAR/radix_tree）
 
 const (
+    RootNodeKey = "######"
     RootNodeVal = "######"
 )
 
@@ -25,13 +26,14 @@ type RadixTree struct {
 func NewRadixTree() *RadixTree {
     return &RadixTree{
         Root: &radix_node{
+            Key: RootNodeKey,
             Val: RootNodeVal,
         },
     }
 }
 
 func (rt *radix_node) isRootNode() bool {
-    return rt != nil && rt.Val == RootNodeVal
+    return rt != nil && rt.Val == RootNodeVal && rt.Key == RootNodeKey
 }
 
 // 转成json
