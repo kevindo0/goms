@@ -2,6 +2,7 @@ tmp
 *.pem
 zenmen/**/config.*
 zenmen/lt
+zenmen/zaojiu
 /**/output
 /**/*.xlsx
 
