@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+// 字典树
+
 /*
 给定一定数量的单词，查询给定字符串出现的单词的次数和以此字符串开头的所有单词的数量
 构建字典树，也称前缀树
@@ -16,13 +18,13 @@ type TrieNode struct {
 	data   []TrieNode
 }
 
-func newTrieNode() TrieNode {
+func NewTrieNode() TrieNode {
 	data := make([]TrieNode, 26)
 	return TrieNode{0, 0, data}
 }
 
 // 在字典树中插入数据
-func (td *TrieNode) insert(str string) {
+func (td *TrieNode) Insert(str string) {
 	if len(str) == 0 {
 		return
 	}
@@ -32,7 +34,7 @@ func (td *TrieNode) insert(str string) {
 	for _, val := range bytes {
 		index := val - 97
 		if len(node.data[index].data) == 0 {
-			node.data[index] = newTrieNode()
+			node.data[index] = NewTrieNode()
 		}
 		node = &node.data[index]
 		node.prefix += 1
@@ -40,7 +42,7 @@ func (td *TrieNode) insert(str string) {
 	node.count += 1
 }
 
-func (td *TrieNode) searchCount(str string) int {
+func (td *TrieNode) SearchCount(str string) int {
 	if len(str) == 0 {
 		return 0
 	}
@@ -57,7 +59,7 @@ func (td *TrieNode) searchCount(str string) int {
 	return node.count
 }
 
-func (td *TrieNode) searchPrefix(str string) int {
+func (td *TrieNode) SearchPrefix(str string) int {
 	if len(str) == 0 {
 		return 0
 	}
@@ -74,14 +76,19 @@ func (td *TrieNode) searchPrefix(str string) int {
 	return node.prefix
 }
 
+// import (
+//     "fmt"
+//     dt "pkgte/datastructure"
+// )
+// 
 // func main() {
-// 	root := newTrieNode()
-// 	root.insert("hello")
-// 	root.insert("hello")
-// 	root.insert("hello")
-// 	root.insert("hello")
-// 	root.insert("helloWorld")
-// 	fmt.Println(root.searchCount("hello"))       // 4
-// 	fmt.Println(root.searchPrefix("hello"))      // 5
-// 	fmt.Println(root.searchPrefix("helloworld")) // 1
+// 	root := dt.NewTrieNode()
+// 	root.Insert("hello")
+// 	root.Insert("hello")
+// 	root.Insert("hello")
+// 	root.Insert("hello")
+// 	root.Insert("helloWorld")
+// 	fmt.Println(root.SearchCount("hello"))       // 4
+// 	fmt.Println(root.SearchPrefix("hello"))      // 5
+// 	fmt.Println(root.SearchPrefix("helloworld")) // 1
 // }
