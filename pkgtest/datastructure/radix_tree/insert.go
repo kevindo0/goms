@@ -21,10 +21,7 @@ func (rt *RadixTree) insertToNode(node *radix_node, key, val string) {
         return 
     }
     fmt.Println("prefix index: ", prefixIndex, node.Key)
-    // 需要分叉时， 将分叉点值设为空
-    if(prefixIndex != len(node.Key) && prefixIndex != len(key)) {
-        node.Val = ""
-    }
+    
     if prefixIndex < len(node.Key) {
         oldKey := node.Key
         oldVal := node.Val
@@ -40,6 +37,12 @@ func (rt *RadixTree) insertToNode(node *radix_node, key, val string) {
             node.Childs = []*radix_node{newNode}
         }
     }
+
+    // 需要分叉时， 将分叉点值设为空
+    if(prefixIndex != len(node.Key) && prefixIndex != len(key)) {
+        node.Val = ""
+    }
+    
     if prefixIndex < len(key) {
         rt.insertToChild(node, key[prefixIndex:], val)
     } else {
